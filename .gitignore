@@ -1,0 +1,23 @@
+# Ignore environment file
+.env
+
+# Ignore Composer dependencies
+/vendor/
+
+# Ignore uploaded files and backups
+/storage/*
+/backups/*
+
+# Ignore temporary and backup files
+*.bak
+*.log
+*.swp
+*.swo
+.DS_Store
+
+# Ignore IDE and editor files
+.idea/
+.vscode/
+
+# Ignore Composer lock (optional, include if you want reproducible builds)
+# composer.lock

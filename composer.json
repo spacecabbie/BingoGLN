@@ -1,0 +1,22 @@
+{
+    "name": "hhaufe/bingogln",
+    "description": "BingoGLN (Generare Loteriae Numeratae) - An open-source web app for generating unique bingo cards",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "HHaufe",
+            "email": "your.email@example.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "monolog/monolog": "^3.0",
+        "vlucas/phpdotenv": "^5.4",
+        "setasign/fpdf": "^1.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\": "src/App/"
+        }
+    }
+}
