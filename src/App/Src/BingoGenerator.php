@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Src;
 
-use FPDF; // FPDF library, loaded via Composer (setasign/fpdf)
-
 /**
  * BingoGenerator class handles the core logic for generating bingo cards,
  * processing form submissions, and rendering the application.
@@ -111,10 +109,10 @@ class BingoGenerator
         for ($p = 0; $p < $pages; $p++) {
             $this->bingoPDF->AddPage('P', 'A4');
             $positions = [
-                [7.5, 18.5], // Adjusted top-left
-                [107.5, 18.5], // Adjusted top-right
-                [7.5, 153.5], // Adjusted bottom-left
-                [107.5, 153.5], // Adjusted bottom-right
+                [7.5, 18.5], // Top-left
+                [107.5, 18.5], // Top-right
+                [7.5, 153.5], // Bottom-left
+                [107.5, 153.5], // Bottom-right
             ];
 
             for ($i = 0; $i < 4; $i++) {
@@ -155,166 +153,5 @@ class BingoGenerator
     public function getDefaultValues(): array
     {
         return $this->defaultValues;
-    }
-}
-
-/**
- * BingoPDF class extends FPDF to generate bingo cards.
- * This will be moved to src/App/Src/BingoPDF.php later.
- */
-class BingoPDF extends FPDF
-{
-    private array $ranges;
-
-    public function __construct()
-    {
-        parent::__construct();
-        $this->ranges = [
-            'B' => range(1, 15),
-            'I' => range(16, 30),
-            'N' => range(31, 45),
-            'G' => range(46, 60),
-            'O' => range(61, 75),
-        ];
-    }
-
-    private function generateBingoCard(): array
-    {
-        $card = [];
-        foreach ($this->ranges as $letter => $numbers) {
-            $shuffled = $numbers;
-            shuffle($shuffled);
-            $card[$letter] = array_slice($shuffled, 0, 5);
-        }
-        $card['N'][2] = '*'; // Placeholder for star symbol
-        return $card;
-    }
-
-    public function drawBingoCard(
-        float $x,
-        float $y,
-        string $title,
-        array &$usedNumbers,
-        string $bgColor,
-        string $textColor,
-        string $uniqueCode
-    ): void {
-        $card = $this->generateBingoCard();
-
-        foreach (['B', 'I', 'N', 'G', 'O'] as $letter) {
-            for ($i = 0; $i < 5; $i++) {
-                if ($card[$letter][$i] !== '*') {
-                    $attempts = 0;
-                    $maxAttempts = 100;
-                    while (in_array($card[$letter][$i], $usedNumbers) && $attempts < $maxAttempts) {
-                        $card[$letter][$i] = $this->getUniqueNumber($this->ranges[$letter], $usedNumbers);
-                        $attempts++;
-                    }
-                    if ($attempts >= $maxAttempts) {
-                        $card[$letter][$i] = $this->findFirstAvailable($this->ranges[$letter], $usedNumbers);
-                    }
-                    if (!in_array($card[$letter][$i], $usedNumbers)) {
-                        $usedNumbers[] = $card[$letter][$i];
-                    }
-                }
-            }
-        }
-
-        // Convert hex colors to RGB
-        $bgR = hexdec(substr($bgColor, 1, 2));
-        $bgG = hexdec(substr($bgColor, 3, 2));
-        $bgB = hexdec(substr($bgColor, 5, 2));
-        $textR = hexdec(substr($textColor, 1, 2));
-        $textG = hexdec(substr($textColor, 3, 2));
-        $textB = hexdec(substr($textColor, 5, 2));
-
-        // Draw the title with a border
-        $this->SetFont('Arial', 'B', 12);
-        $this->SetTextColor($textR, $textG, $textB);
-        $this->SetXY($x, $y);
-        $this->Cell(95, 10, $title, 1, 1, 'C');
-
-        // Draw the unique code below the title (reduced size and spacing)
-        $this->SetFont('Arial', '', 6);
-        $this->SetXY($x, $y + 10);
-        $this->Cell(95, 3, 'Code: ' . $uniqueCode, 0, 1, 'C');
-
-        // Set line thickness to 0.4mm
-        $this->SetLineWidth(0.4);
-
-        // Draw the card grid (adjusted to start higher)
-        $this->SetFont('Arial', 'B', 30); // BINGO letters at 30pt, bold
-        $this->SetTextColor($textR, $textG, $textB);
-        $this->SetFillColor($bgR, $bgG, $bgB);
-        $this->SetXY($x, $y + 13);
-        $this->Cell(19, 10, 'B', 1, 0, 'C', 1);
-        $this->Cell(19, 10, 'I', 1, 0, 'C', 1);
-        $this->Cell(19, 10, 'N', 1, 0, 'C', 1);
-        $this->Cell(19, 10, 'G', 1, 0, 'C', 1);
-        $this->Cell(19, 10, 'O', 1, 0, 'C', 1);
-
-        $this->SetFont('Arial', 'B', 40); // Numbers at 40pt, bold
-        for ($i = 0; $i < 5; $i++) {
-            $this->SetXY($x, $y + 23 + ($i * 19));
-            foreach (['B', 'I', 'N', 'G', 'O'] as $letter) {
-                $this->Cell(19, 19, $card[$letter][$i], 1, 0, 'C', 1);
-            }
-        }
-
-        // Reset colors and line width
-        $this->SetTextColor(0, 0, 0);
-        $this->SetFillColor(255, 255, 255);
-        $this->SetLineWidth(0.2);
-    }
-
-    private function getUniqueNumber(array $range, array &$usedNumbers): int
-    {
-        $available = array_diff($range, $usedNumbers);
-        if (empty($available)) {
-            return reset($range);
-        }
-        return $available[array_rand($available)];
-    }
-
-    private function findFirstAvailable(array $range, array &$usedNumbers): int
-    {
-        foreach ($range as $num) {
-            if (!in_array($num, $usedNumbers)) {
-                return $num;
-            }
-        }
-        return reset($range);
-    }
-
-    public function generatePreview(
-        string $title,
-        string $bgColor,
-        string $textColor,
-        string $uniqueCode
-    ): string {
-        $this->SetMargins(5, 5, 5);
-        $this->AddPage('P', 'A4');
-        $usedNumbers = [];
-
-        $positions = [
-            [7.5, 18.5], // Adjusted top-left
-            [107.5, 18.5], // Adjusted top-right
-            [7.5, 153.5], // Adjusted bottom-left
-            [107.5, 153.5], // Adjusted bottom-right
-        ];
-
-        for ($i = 0; $i < 4; $i++) {
-            $this->drawBingoCard(
-                $positions[$i][0],
-                $positions[$i][1],
-                $title,
-                $usedNumbers,
-                $bgColor,
-                $textColor,
-                $uniqueCode
-            );
-        }
-
-        return $this->Output('S');
     }
 }
