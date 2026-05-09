@@ -14,6 +14,6 @@ CREATE TABLE IF NOT EXISTS cards (
     user_id INT NULL
 );
 
--- Add index for faster lookups
+-- Add indexes for faster lookups
 CREATE INDEX idx_code ON cards(code);
 CREATE INDEX idx_created_at ON cards(created_at);
